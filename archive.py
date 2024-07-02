@@ -1,5 +1,6 @@
 import shutil as sh
 
-def archive(filename : str):
-    sh.make_archive(f'./uploads/{filename}.parse', 'zip', f'./uploads/{filename}.parse')
-    sh.move(f'./uploads/{filename}.parse.zip', f'./uploads/{filename}.parse/archive.zip')
+def archive(task_id : str):
+    sh.make_archive(f'./uploads/{task_id}/archive', 'zip', f'./uploads/{task_id}/output')
+    
+archive('26b63b23-91fb-448e-90fb-18048748ba47')
