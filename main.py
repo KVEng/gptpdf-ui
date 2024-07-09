@@ -10,6 +10,7 @@ from markdown.extensions import Extension
 from archive import archive
 import utils as u
 import xml.etree.ElementTree as ElementTree
+import re
 
 app = Flask(__name__)
 
@@ -65,8 +66,9 @@ def run_gptpdf(task_id):
     process = subprocess.Popen(['python', 'parse_pdf.py', task_id, os.environ['OPENAI_API_KEY'], os.environ['OPENAI_BASE_URL'], '4'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     for line in iter(process.stdout.readline, b''):
         line_str = line.decode('utf-8')
-        if line_str.startswith('![]('):  # ![](1.png)
-            image_path = line_str.strip()[4:-1]  # Extract the image path from the line
+        match = re.match(r'!\[.*\]\((.*)\)', line_str)  # Match any image path format
+        if match:
+            image_path = match.group(1)
             full_image_path = os.path.join(u.uploads_folder(task_id), 'output', image_path)
             if os.path.exists(full_image_path):
                 with open(full_image_path, "rb") as image_file:
