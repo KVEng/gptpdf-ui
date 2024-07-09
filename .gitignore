@@ -2,3 +2,6 @@ venv
 uploads/
 __pycache__/
 .DS_Store
+
+.env
+*_priv.py
