@@ -11,6 +11,7 @@ from archive import archive
 import utils as u
 import xml.etree.ElementTree as ElementTree
 import re
+import env
 
 app = Flask(__name__)
 
@@ -63,7 +64,7 @@ def zip_format(task_id):
     return send_file(file_path, mimetype='application/x-zip', as_attachment=True, download_name=task_id+'.zip')
 
 def run_gptpdf(task_id):
-    process = subprocess.Popen(['python', 'parse_pdf.py', task_id, os.environ['OPENAI_API_KEY'], os.environ['OPENAI_BASE_URL'], '4'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(['python', 'parse_pdf.py', task_id, env.OpenAI_Key, env.OpenAI_BaseUrl, '4'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     for line in iter(process.stdout.readline, b''):
         line_str = line.decode('utf-8')
         match = re.match(r'!\[.*\]\((.*)\)', line_str)  # Match any image path format
