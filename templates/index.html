@@ -3,8 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>GPT PDF UI</title>
-        <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.0/dist/showdown.min.js"></script>
+        <title>PDF to Markdown</title>
         <style>
             * {
                 margin: 0;
@@ -53,21 +52,6 @@
                 align-items: center;
                 position: relative;
                 margin-bottom: 20px;
-            }
-
-            label {
-                padding: 0 10px;
-            }
-
-            .progress,
-            .gpt_progress {
-                display: flex;
-                align-items: center;
-                margin-top: 10px;
-            }
-
-            .history {
-                margin-top: 30px;
             }
 
             .link {
@@ -130,7 +114,7 @@
         </header>
         <main>
             <div class="container">
-                <div>
+                <div style="margin-bottom: 12px">
                     Have uploaded one? Access by task id.
                     <br>
                     Task ID: <input type="text" id="fileId" placeholder="xxxx-xxxx-xxx">
@@ -143,19 +127,12 @@
                 <div class="upload">
                     <input type="file" id="fileInput" accept=".pdf" />
                     <button id="uploadButton" onclick="uploadFile()">
-                        Upload and Convert
+                        Convert!
                     </button>
                     <div class="spinner" id="spinner"></div>
                 </div>
-                <div class="progress">
-                    <label>pages:</label>
-                    <div id="progress" class="progress"></div>
-                </div>
-                <div class="gpt_progress">
-                    <label>progress:</label>
-                    <div id="gpt_progress" class="progress"></div>
-                </div>
-                <div id="result" class="result"></div>
+                <a class="link" target="_blank" id="taskId"></a>
+                <div class="link" id="result" class="result"></div>
             </div>
         </main>
         <footer>
@@ -171,53 +148,13 @@
         </footer>
 
         <script>
-            async function fetchEventStream(url, opt, processEvent) {
-                const response = await fetch(url, {
-                    headers: {
-                        Accept: "text/event-stream",
-                    },
-                    ...opt,
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder("utf-8");
-                let buffer = "";
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    buffer += decoder.decode(value, { stream: true });
-
-                    let lines = buffer.split("\n");
-                    buffer = lines.pop(); // keep incomplete line in buffer
-
-                    for (const line of lines) {
-                        if (line.startsWith("data: ")) {
-                            const eventData = line.slice(6);
-                            processEvent(eventData);
-                        }
-                    }
-                }
-            }
-
-            let content = "";
-            var converter = new showdown.Converter();
-            let progress = 0;
-            let gpt_progress = 0;
 
             async function uploadFile() {
                 const fileInput = document.getElementById("fileInput");
                 const resultDiv = document.getElementById("result");
-                const processingDiv = document.getElementById("progress");
-                const gpt_processingDiv =
-                    document.getElementById("gpt_progress");
                 const uploadButton = document.getElementById("uploadButton");
                 const spinner = document.getElementById("spinner");
+                const taskIdElm = document.getElementById("taskId");
 
                 if (fileInput.files.length === 0) {
                     alert("Please select a file to upload.");
@@ -232,39 +169,28 @@
                 uploadButton.disabled = true;
 
                 try {
-                    fetchEventStream(
-                        "/upload",
+                    fetch("/upload",
                         {
                             method: "POST",
                             body: formData,
-                        },
-                        (data) => {
-                            if (data.startsWith("parse page:")) {
-                                progress = parseInt(data.split(":")[1]);
-                                processingDiv.innerHTML = progress;
-                                return;
-                            }
-
-                            if (data.startsWith("gpt parse page:")) {
-                                gpt_progress = parseInt(data.split(":")[1]);
-                                gpt_processingDiv.innerHTML = gpt_progress;
-                                return;
-                            }
-
-                            spinner.style.display = "none";
-                            uploadButton.disabled = false;
-
-                            content += data + "\n";
-                            resultDiv.innerHTML = converter.makeHtml(content);
-                        },
+                        }
+                    )
+                    .then(response => response.text())
+                    .then((taskId) => {
+                            taskIdElm.href = "task/" + taskId
+                            taskIdElm.innerText = "Task ID: " + taskId
+                            console.log(taskId);
+                            console.log(taskIdElm)
+                        }
                     ).catch((error) => {
+                        resultDiv.textContent = "failed: " + error
                         console.error(error);
                     });
                 } catch (error) {
                     resultDiv.textContent = "Error: " + error.message;
-                    spinner.style.display = "none";
-                    uploadButton.disabled = false;
                 }
+                spinner.style.display = "none";
+                uploadButton.disabled = false;
             }
         </script>
     </body>
