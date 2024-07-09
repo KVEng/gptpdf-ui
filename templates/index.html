@@ -104,7 +104,7 @@
             }
 
             button {
-                padding: 10px 20px;
+                padding: 3px 10px;
                 background-color: #3498db;
                 color: white;
                 border: none;
@@ -125,20 +125,21 @@
 
     <body>
         <header>
-            <h1>GPT PDF UI</h1>
-            <p>
-                Powered by
-                <a class="link" href="https://github.com/CosmosShadow/gptpdf"
-                    >gptpdf</a
-                >
-                and
-                <a class="link" href="https://github.com/daodao97/gptpdf-ui"
-                    >gptpdf-ui</a
-                >
-            </p>
+            <h1>PDF to Markdown</h1>
+            <p style="font-size: 13px;">Operated by <a class="link" target="_blank"href="https://github.com/KVEng">KevinZonda Engineering</a></p>
         </header>
         <main>
             <div class="container">
+                <div>
+                    Have uploaded one? Access by task id.
+                    <br>
+                    Task ID: <input type="text" id="fileId" placeholder="xxxx-xxxx-xxx">
+                    <button onclick="window.open('task/' + document.getElementById('fileId').value, '_blank')">Access</button>
+                </div>
+
+                <div>
+                    Otherwise, upload a PDF:
+                </div>
                 <div class="upload">
                     <input type="file" id="fileInput" accept=".pdf" />
                     <button id="uploadButton" onclick="uploadFile()">
@@ -155,24 +156,18 @@
                     <div id="gpt_progress" class="progress"></div>
                 </div>
                 <div id="result" class="result"></div>
-                <div class="history">
-                    <h2>history</h2>
-                    <ul>
-                        {% for pdf_file in pdf_files %}
-                        <li>
-                            <a target="_blank" href="files/{{ pdf_file }}" class="link">
-                                {{ pdf_file }}
-                            </a>
-                            <a target="_blank" href="md/{{ pdf_file }}" class="link">MD</a>
-                            <a target="_blank" href="zip/{{ pdf_file }}" class="link">ZIP</a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
             </div>
         </main>
         <footer>
-            <p>&copy; 2024 PDF to Markdown Converter</p>
+            <p>
+                Powered by
+                <a class="link" href="https://github.com/CosmosShadow/gptpdf">gptpdf</a>
+                and
+                <a class="link" href="https://github.com/daodao97/gptpdf-ui">gptpdf-ui</a>
+            </p>
+            <p>&copy; 2024
+                <a class="link" target="_blank"href="https://github.com/KVEng">KevinZonda Engineering</a>
+            </p>
         </footer>
 
         <script>

@@ -19,7 +19,7 @@ os.makedirs(u.UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
-    return render_template('index.html', pdf_files=get_all_pdf_names(u.UPLOAD_FOLDER))
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -36,8 +36,10 @@ def upload_file():
         file.save(filepath)
         return Response(run_gptpdf(task_id), content_type='text/event-stream')
 
-@app.route('/files/<path:task_id>')
+@app.route('/task/<path:task_id>')
 def md_render(task_id):
+    if not u.is_valid_uuid(task_id):
+        return "illegal task id", 400
     # 读取 Markdown 文件并转换为 HTML
     output_dir = os.path.join(u.uploads_folder(task_id), "output")
     file_path = os.path.join(output_dir, "output.md")
@@ -45,21 +47,33 @@ def md_render(task_id):
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
             html_content = markdown.markdown(content, extensions=[ImagePrefixExtension(prefix= "/"+output_dir)])
-            return render_template('file.html', content=Markup(html_content), filename=task_id)
+            return render_template('task.html', content=Markup(html_content), filename=task_id)
     else:
-        return "File not found", 404
+        return "Task not found", 404
 
 @app.route('/uploads/<path:filename>')
 def file_server(filename):
+    if '..' in filename:
+        return "illegal path", 400
+    if not filename.endswith('.png'):
+        return "illegal file type", 400
+    filename = filename.strip('/')
+    strs = filename.split('/')
+    if not u.is_valid_uuid(strs[0]):
+        return "illegal task id", 400
     return send_from_directory(u.UPLOAD_FOLDER, filename)
 
 @app.route('/md/<path:task_id>')
 def md_format(task_id):
+    if not u.is_valid_uuid(task_id):
+        return "illegal task id", 400
     file_path = os.path.join(u.uploads_folder(task_id), "output", "output.md",)
     return send_file(file_path, mimetype='text/markdown', as_attachment=True, download_name=task_id+'.md')
 
 @app.route('/zip/<path:task_id>')
 def zip_format(task_id):
+    if not u.is_valid_uuid(task_id):
+        return "illegal task id", 400
     file_path = os.path.join(u.uploads_folder(task_id), "archive.zip",)
     print(file_path)
     return send_file(file_path, mimetype='application/x-zip', as_attachment=True, download_name=task_id+'.zip')
@@ -81,19 +95,6 @@ def run_gptpdf(task_id):
     process.stdout.close()
     process.wait()
     archive(task_id)
-
-def get_all_pdf_names(directory):
-    """
-    获取目录下所有的 PDF 文件名称列表
-    :param directory: 目标目录
-    :return: PDF 文件名称列表
-    """
-    pdf_files = []
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            if file.lower().endswith('.pdf'):
-                pdf_files.append(file)
-    return pdf_files
 
 class ImagePrefixExtension(Extension):
     def __init__(self, **kwargs):
@@ -117,6 +118,7 @@ class ImagePrefixInlineProcessor(InlineProcessor):
             src = m.group(2)
             src = self.config['prefix'] + "/" + src
             el = ElementTree.Element("img")
+            el.set('style', 'max-width: 100%')
             el.set('src', src)
             el.set('alt', alt)
             return el, m.start(0), m.end(0)
