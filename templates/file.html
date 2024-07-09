@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{{ filename}}</title>
+        <title>{{ filename }}</title>
         <style>
             .content {
                 padding: 20px;
@@ -14,7 +14,11 @@
     </head>
     <body>
         <main class="content">
-            <h1>{{ filename }}</h1>
+            <h1>ID: {{ filename }}</h1>
+            <h2>
+                <a target="_blank" href="/md/{{ filename }}" class="link">MD</a>
+                <a target="_blank" href="/zip/{{ filename }}" class="link">ZIP</a>
+            </h2>
             {{ content }}
         </main>
     </body>

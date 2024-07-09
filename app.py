@@ -60,7 +60,8 @@ def md_format(task_id):
 
 @app.route('/zip/<path:task_id>')
 def zip_format(task_id):
-    file_path = os.path.join(u.uploads_folder(task_id), "output", "archive.zip",)
+    file_path = os.path.join(u.uploads_folder(task_id), "archive.zip",)
+    print(file_path)
     return send_file(file_path, mimetype='application/x-zip', as_attachment=True, download_name=task_id+'.zip')
 
 def run_gptpdf(task_id):

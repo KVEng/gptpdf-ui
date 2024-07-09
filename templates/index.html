@@ -160,11 +160,11 @@
                     <ul>
                         {% for pdf_file in pdf_files %}
                         <li>
-                            <a href="files/{{ pdf_file }}" class="link">
+                            <a target="_blank" href="files/{{ pdf_file }}" class="link">
                                 {{ pdf_file }}
                             </a>
-                            <a href="md/{{ pdf_file }}" class="link">MD</a>
-                            <a href="zip/{{ pdf_file }}" class="link">ZIP</a>
+                            <a target="_blank" href="md/{{ pdf_file }}" class="link">MD</a>
+                            <a target="_blank" href="zip/{{ pdf_file }}" class="link">ZIP</a>
                         </li>
                         {% endfor %}
                     </ul>
