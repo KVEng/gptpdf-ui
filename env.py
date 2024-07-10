@@ -3,7 +3,14 @@ import os
 
 load_dotenv()
 
+def _load(env, if_none=""):
+    _v = os.environ[env]
+    if _v == "":
+        _v = if_none
+    return _v
+
 OpenAI_Key     = os.environ['OPENAI_API_KEY']
 OpenAI_BaseUrl = os.environ['OPENAI_BASE_URL']
-Host           = os.environ['HOST']
-Port           = int(os.environ['PORT'])
+Host           = _load('HOST', '127.0.0.1')
+Port           = int(_load('PORT', '5000'))
+Model          = _load('MODEL', 'gpt-4o')
