@@ -1,8 +1,6 @@
 
 from flask import Flask, request, render_template, Response, send_file, send_from_directory
 import os
-import subprocess
-import base64
 import markdown
 from markupsafe import Markup
 from markdown.inlinepatterns import InlineProcessor
@@ -12,6 +10,9 @@ import utils as u
 import xml.etree.ElementTree as ElementTree
 import re
 import env
+import threading
+import gptpdf
+import datetime
 
 app = Flask(__name__)
 
@@ -34,14 +35,20 @@ def upload_file():
         os.makedirs(upload_dir, exist_ok=True)
         filepath = os.path.join(upload_dir, 'input.pdf')
         file.save(filepath)
-        return Response(run_gptpdf(task_id), content_type='text/event-stream')
+        threading.Thread(target=run_gptpdf, args=(task_id,)).start()
+        return task_id, 200
 
 @app.route('/task/<path:task_id>')
 def md_render(task_id):
     if not u.is_valid_uuid(task_id):
         return "illegal task id", 400
+    file_path = u.uploads_folder(task_id)
+    wip_flag = os.path.join(file_path, 'WIP')
+    wip_content, exist = u.read_file(wip_flag)
+    if exist:
+        return render_template('task_wip.html', started_at=wip_content, filename=task_id)
     # 读取 Markdown 文件并转换为 HTML
-    output_dir = os.path.join(u.uploads_folder(task_id), "output")
+    output_dir = os.path.join(file_path, "output")
     file_path = os.path.join(output_dir, "output.md")
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -79,22 +86,22 @@ def zip_format(task_id):
     return send_file(file_path, mimetype='application/x-zip', as_attachment=True, download_name=task_id+'.zip')
 
 def run_gptpdf(task_id):
-    process = subprocess.Popen(['python', 'parse_pdf.py', task_id, env.OpenAI_Key, env.OpenAI_BaseUrl, '4'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    for line in iter(process.stdout.readline, b''):
-        line_str = line.decode('utf-8')
-        match = re.match(r'!\[.*\]\((.*)\)', line_str)  # Match any image path format
-        if match:
-            image_path = match.group(1)
-            full_image_path = os.path.join(u.uploads_folder(task_id), 'output', image_path)
-            if os.path.exists(full_image_path):
-                with open(full_image_path, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
-                    base64_image = f"data:image/png;base64,{encoded_string}"
-                    line_str = f"![]({base64_image})"
-        yield f'data: {line_str}\n\n'
-    process.stdout.close()
-    process.wait()
+    print('Running TaskID:', task_id)
+    file_path = u.uploads_folder(task_id)
+    wip_flag = os.path.join(file_path, 'WIP')
+    with open(wip_flag, 'w', encoding='utf-8') as file:
+        file.write(str(datetime.datetime.now().isoformat()))
+    # mock_run_gptpdf(task_id)
+    input_file = os.path.join(file_path, 'input.pdf')
+    output_dir = os.path.join(file_path, 'output')
+    gptpdf.parse_pdf(input_file, api_key=env.OpenAI_Key, base_url=env.OpenAI_BaseUrl, output_dir=output_dir, gpt_worker=4, verbose=True)
     archive(task_id)
+    os.remove(wip_flag)
+    print('Finished TaskID:', task_id)
+
+def mock_run_gptpdf(task_id):
+    import time
+    time.sleep(20)
 
 class ImagePrefixExtension(Extension):
     def __init__(self, **kwargs):
@@ -127,4 +134,4 @@ class ImagePrefixInlineProcessor(InlineProcessor):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', debug=False)

@@ -15,3 +15,13 @@ def is_valid_uuid(uuid_str):
     except ValueError:
         return False
     return str(uuid_obj) == uuid_str
+
+def read_file(path) -> tuple[str, bool]:
+    # return content, is_exist
+    if os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as file:
+                return file.read(), True
+        except:
+            return "", False
+    return "", False
