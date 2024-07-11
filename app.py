@@ -11,6 +11,7 @@ import env
 import threading
 import gptpdf
 import datetime
+import gpts
 
 app = Flask(__name__)
 
@@ -33,7 +34,7 @@ def upload_file():
         os.makedirs(upload_dir, exist_ok=True)
         filepath = os.path.join(upload_dir, 'input.pdf')
         file.save(filepath)
-        threading.Thread(target=run_gptpdf, args=(task_id,)).start()
+        threading.Thread(target=run_gptpdf, args=(task_id, '')).start()
         return task_id, 200
 
 @app.route('/task/<path:task_id>/status')
@@ -97,23 +98,44 @@ def zip_format(task_id):
     print(file_path)
     return send_file(file_path, mimetype='application/x-zip', as_attachment=True, download_name=task_id+'.zip')
 
-def run_gptpdf(task_id):
+def run_gptpdf(task_id, translate_to=''):
     print('Running TaskID:', task_id)
     file_path = u.uploads_folder(task_id)
     wip_flag = os.path.join(file_path, 'WIP')
+    
+    u.write_file(wip_flag, datetime.datetime.now().isoformat())
+    
     with open(wip_flag, 'w', encoding='utf-8') as file:
         file.write(str(datetime.datetime.now().isoformat()))
     # mock_run_gptpdf(task_id)
     input_file = os.path.join(file_path, 'input.pdf')
     output_dir = os.path.join(file_path, 'output')
     gptpdf.parse_pdf(input_file, api_key=env.OpenAI_Key, base_url=env.OpenAI_BaseUrl, output_dir=output_dir, gpt_worker=env.MaxThread, verbose=True, model=env.Model)
+    translate_md(task_id, translate_to)
     archive(task_id)
     os.remove(wip_flag)
     print('Finished TaskID:', task_id)
 
-def mock_run_gptpdf(task_id):
-    import time
-    time.sleep(20)
+def translate_md(task_id, translate_to):
+    if translate_to == '':
+        return
+    print('Translating TaskID:', task_id)
+    file_path = u.uploads_folder(task_id)
+    wip_flag = os.path.join(file_path, 'TRANSLATE')
+    
+    u.write_file(wip_flag, datetime.datetime.now().isoformat())
+    
+    output_dir = os.path.join(file_path, 'output')
+    input_file = os.path.join(output_dir, 'output.md')
+    output_file = os.path.join(output_dir, 'output.translated.md')
+    gpts.translate_md(
+        input_file=input_file, 
+        output_file=output_file,
+        target_lang='Chinese (Simplified)',
+        verbose=True)
+    archive(task_id)
+    os.remove(wip_flag)
+    print('Translated TaskID:', task_id)
 
 if __name__ == '__main__':
     app.run(host=env.Host, port=env.Port, debug=False)

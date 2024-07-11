@@ -25,3 +25,16 @@ def read_file(path) -> tuple[str, bool]:
         except:
             return "", False
     return "", False
+
+
+def write_file(path, content) -> bool:
+    try:
+        with open(path, 'w', encoding='utf-8') as file:
+            file.write(str(content))
+        return True
+    except:
+        return False
+
+def mock_run_gptpdf(task_id):
+    import time
+    time.sleep(20)
