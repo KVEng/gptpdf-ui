@@ -1,5 +1,5 @@
 
-from flask import Flask, request, render_template, Response, send_file, send_from_directory
+from flask import Flask, request, render_template, send_file, send_from_directory
 import os
 import markdown
 from markupsafe import Markup
@@ -34,7 +34,12 @@ def upload_file():
         os.makedirs(upload_dir, exist_ok=True)
         filepath = os.path.join(upload_dir, 'input.pdf')
         file.save(filepath)
-        threading.Thread(target=run_gptpdf, args=(task_id, '')).start()
+        
+        need_translate = request.args.get('translate', '')
+        translate_to = ''
+        if need_translate == 'true':
+            translate_to = 'Chinese (Simplified)'
+        threading.Thread(target=run_gptpdf, args=(task_id, translate_to)).start()
         return task_id, 200
 
 @app.route('/task/<path:task_id>/status')
@@ -99,7 +104,6 @@ def zip_format(task_id):
     return send_file(file_path, mimetype='application/x-zip', as_attachment=True, download_name=task_id+'.zip')
 
 def run_gptpdf(task_id, translate_to=''):
-    print('Running TaskID:', task_id)
     file_path = u.uploads_folder(task_id)
     wip_flag = os.path.join(file_path, 'WIP')
     

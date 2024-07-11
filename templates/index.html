@@ -131,6 +131,11 @@
                     </button>
                     <div class="spinner" id="spinner"></div>
                 </div>
+                <div>
+                    <input type="checkbox" id="need_translate" name="need_translate" />
+                    <label for="need_translate">Need Translate</label>
+                </div>
+
                 <a class="link" target="_blank" id="taskId"></a>
                 <div class="link" id="result" class="result"></div>
             </div>
@@ -155,6 +160,7 @@
                 const uploadButton = document.getElementById("uploadButton");
                 const spinner = document.getElementById("spinner");
                 const taskIdElm = document.getElementById("taskId");
+                const need_translate = document.getElementById("need_translate").checked;
 
                 if (fileInput.files.length === 0) {
                     alert("Please select a file to upload.");
@@ -169,7 +175,7 @@
                 uploadButton.disabled = true;
 
                 try {
-                    fetch("/upload",
+                    fetch("/upload" + (need_translate ? "?translate=true" : ""),
                         {
                             method: "POST",
                             body: formData,
