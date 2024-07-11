@@ -60,6 +60,9 @@ def task_status(task_id):
 def md_render(task_id):
     if not u.is_valid_uuid(task_id):
         return "illegal task id", 400
+    is_translate = False
+    if request.args.get('translate') == 'true':
+        is_translate = True
     file_path = u.uploads_folder(task_id)
     wip_flag = os.path.join(file_path, 'WIP')
     wip_content, exist = u.read_file(wip_flag)
@@ -68,6 +71,9 @@ def md_render(task_id):
     # 读取 Markdown 文件并转换为 HTML
     output_dir = os.path.join(file_path, "output")
     file_path = os.path.join(output_dir, "output.md")
+    translate_file = os.path.join(output_dir, 'output.translated.md')
+    if os.path.exists(translate_file) and is_translate:
+        file_path = translate_file
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
