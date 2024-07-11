@@ -12,6 +12,7 @@ import threading
 import gptpdf
 import datetime
 import gpts
+from md2pdf import md2pdf
 
 app = Flask(__name__)
 
@@ -106,8 +107,15 @@ def zip_format(task_id):
     if not u.is_valid_uuid(task_id):
         return "illegal task id", 400
     file_path = os.path.join(u.uploads_folder(task_id), "archive.zip",)
-    print(file_path)
     return send_file(file_path, mimetype='application/x-zip', as_attachment=True, download_name=task_id+'.zip')
+
+@app.route('/pdf/<path:task_id>')
+def translate_pdf(task_id):
+    if not u.is_valid_uuid(task_id):
+        return "illegal task id", 400
+    file_path = os.path.join(u.uploads_folder(task_id), "output", 'translated.pdf')
+    return send_file(file_path,as_attachment=True, download_name=task_id+'.pdf')
+
 
 def run_gptpdf(task_id, translate_to=''):
     file_path = u.uploads_folder(task_id)
@@ -143,7 +151,9 @@ def translate_md(task_id, translate_to):
         output_file=output_file,
         target_lang='Chinese (Simplified)',
         verbose=True)
-    archive(task_id)
+    
+    output_dir = os.path.join(os.getcwd(), 'uploads', task_id, 'output')
+    md2pdf('output.translated.md', 'translated.pdf', working_dir=output_dir)
     os.remove(wip_flag)
     print('Translated TaskID:', task_id)
 
