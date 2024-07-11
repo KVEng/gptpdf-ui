@@ -3,11 +3,10 @@ from flask import Flask, request, render_template, Response, send_file, send_fro
 import os
 import markdown
 from markupsafe import Markup
-from markdown.inlinepatterns import InlineProcessor
-from markdown.extensions import Extension
+from markdown_utils import ImagePrefixExtension
+
 from archive import archive
 import utils as u
-import xml.etree.ElementTree as ElementTree
 import env
 import threading
 import gptpdf
@@ -36,6 +35,20 @@ def upload_file():
         file.save(filepath)
         threading.Thread(target=run_gptpdf, args=(task_id,)).start()
         return task_id, 200
+
+@app.route('/task/<path:task_id>/status')
+def task_status(task_id):
+    if not u.is_valid_uuid(task_id):
+        return "illegal task id", 400
+    file_path = u.uploads_folder(task_id)
+    wip_flag = os.path.join(file_path, 'WIP')
+    wip_content, exist = u.read_file(wip_flag)
+    if exist:
+        return wip_content, 200
+    output_md = os.path.join(file_path, "output", "output.md")
+    if os.path.exists(output_md):
+        return "finished", 200
+    return "not found", 404
 
 @app.route('/task/<path:task_id>')
 def md_render(task_id):
@@ -101,36 +114,6 @@ def run_gptpdf(task_id):
 def mock_run_gptpdf(task_id):
     import time
     time.sleep(20)
-
-class ImagePrefixExtension(Extension):
-    def __init__(self, **kwargs):
-        self.config = {
-            'prefix': ['', 'Prefix for image paths']
-        }
-        super().__init__(**kwargs)
-
-    def extendMarkdown(self, md):
-        IMAGE_LINK_RE = r'!\[(.*?)\]\((.*?)\)'
-        md.inlinePatterns.register(ImagePrefixInlineProcessor(IMAGE_LINK_RE, self.getConfigs()), 'image_prefix', 175)
-
-class ImagePrefixInlineProcessor(InlineProcessor):
-    def __init__(self, pattern, config):
-        super().__init__(pattern)
-        self.config = config
-
-    def handleMatch(self, m, data):
-        if m:
-            alt = m.group(1)
-            src = m.group(2)
-            src = self.config['prefix'] + "/" + src
-            el = ElementTree.Element("img")
-            el.set('style', 'max-width: 100%')
-            el.set('src', src)
-            el.set('alt', alt)
-            return el, m.start(0), m.end(0)
-        return None, None, None
-
-
 
 if __name__ == '__main__':
     app.run(host=env.Host, port=env.Port, debug=False)
