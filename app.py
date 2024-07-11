@@ -106,7 +106,7 @@ def run_gptpdf(task_id):
     # mock_run_gptpdf(task_id)
     input_file = os.path.join(file_path, 'input.pdf')
     output_dir = os.path.join(file_path, 'output')
-    gptpdf.parse_pdf(input_file, api_key=env.OpenAI_Key, base_url=env.OpenAI_BaseUrl, output_dir=output_dir, gpt_worker=4, verbose=True, model=env.Model)
+    gptpdf.parse_pdf(input_file, api_key=env.OpenAI_Key, base_url=env.OpenAI_BaseUrl, output_dir=output_dir, gpt_worker=env.MaxThread, verbose=True, model=env.Model)
     archive(task_id)
     os.remove(wip_flag)
     print('Finished TaskID:', task_id)
