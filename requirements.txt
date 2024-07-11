@@ -4,3 +4,4 @@ Markdown==3.6
 MarkupSafe==2.1.5
 python-dotenv
 openai
+pypandoc
